@@ -7,10 +7,17 @@ bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
 
 # displays a greeting
 def greetings(message, btns=None):
-        if btns is None:
-                bot.send_message(message.chat.id, f'Привет, {message.from_user.last_name} {message.from_user.first_name}')
-        else:
-                bot.send_message(message.chat.id, f'Привет, {message.from_user.last_name} {message.from_user.first_name}', reply_markup=btns)
+        first_name = message.from_user.last_name
+        last_name = message.from_user.first_name
+        names = ['']
+        if first_name is not None:
+                names.append(first_name)
+        if first_name is not None:
+                names.append(last_name)
+        if names:
+                names[0] = ','
+        names = ' '.join(names)
+        bot.send_message(message.chat.id, f'Привет{names}', reply_markup=btns)
 
 
 @bot.message_handler(commands=['start', 'hello'])
@@ -27,12 +34,12 @@ def start(message):
 def help(message):
         bot.send_message(message.chat.id,
                         '''<b>команды:</b>              <b>функции:</b>
-/start   /hello          начать диалог
+<u>/start</u>   <u>/hello</u>          начать диалог
 
-/photo                    показать мое фото
+<u>/photo</u>                    показать мое фото
 
-/github   /site,        показать мой github
-/website   /git''',
+<u>/github</u>   <u>/site</u>        показать мой github
+<u>/website</u>   <u>/git</u>''',
 parse_mode='html'
 )
 
