@@ -12,9 +12,9 @@ def greetings(message, btns=None):
         names = ['']
         if first_name is not None:
                 names.append(first_name)
-        if first_name is not None:
+        if last_name is not None:
                 names.append(last_name)
-        if names:
+        if len(names) > 1:
                 names[0] = ','
         names = ' '.join(names)
         bot.send_message(message.chat.id, f'Привет{names}', reply_markup=btns)
