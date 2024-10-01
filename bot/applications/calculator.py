@@ -3,10 +3,10 @@ from bot.__main__ import bot
 import telebot
 
 expression = {
-    'numbers': {},
+    'numbers': [],
     'signs': {},
-    'number_bracket': {},
-    'last_char': '',
+    'number_bracket': {'(': [], ')': []},
+    'string_expression': [],
 }
 
 
@@ -44,36 +44,119 @@ def show_calculator(message):
 
 
 def change_last_char(char):
-    expression['last_char'] = char
+    expression['last_char'].append(char)
+
+
+def delete_last_char():
+    if not expression['last_char']:
+        return
+    expression['last_char'].pop(-1)
 
 
 def add_int_or_float_number(num):
     numbers = expression['numbers']
     if int(num) == num:
-        numbers[len(numbers)] = int(num)
+        numbers.append(int(num))
     else:
-        numbers[len(numbers)] = num
+        numbers.append(num)
 
 
-def processing_nums_or_signs(signs_or_digs, name_of_proc, callback):
-    numbers_count = len(expression["numbers"])
-    if name_of_proc == "signs" and not numbers_count:
-        return
-    for sign_or_dig in signs_or_digs:
+def processing_nums(callback):
+    for dig in range(0, 10):
         numbers_count = len(expression["numbers"])
         signs_count = len(expression["signs"])
-        if callback.data == sign_or_dig and numbers_count == signs_count:
-            expression[name_of_proc][numbers_count + 1] = sign_or_dig
-            change_last_char(sign_or_dig)
+        if callback.data == dig and numbers_count == signs_count:
+            expression['numbers'].append(dig)
+            change_last_char(dig)
             return
-        elif callback.data == sign_or_dig and numbers_count > signs_count:
-            expression[name_of_proc][numbers_count] += sign_or_dig
-            change_last_char(sign_or_dig)
+        elif callback.data == dig and numbers_count > signs_count:
+            expression['numbers'][numbers_count - 1] += dig
+            change_last_char(dig)
             return
+
+
+def processing_signs(signs, callback):
+    for sign in signs:
+        numbers_count = len(expression["numbers"])
+        signs_count = len(expression["signs"])
+        if callback.data == sign and numbers_count == signs_count:
+            return
+        elif callback.data == sign and numbers_count > signs_count:
+            expression['signs'].append(sign)
+            change_last_char(sign)
+            return
+
+
+def processing_all_in_expression(callback, numbers, number_bracket, signs):
+    processing_nums(
+        callback
+    )
+
+    if callback.data == '()':
+        if not len(numbers):
+            number_bracket['('].append(len(numbers))
+            change_last_char('()')
+        elif len(number_bracket['(']) == len(number_bracket[')']):
+            number_bracket['('].append(len(numbers) - 1)
+            change_last_char('()')
+        elif len(number_bracket['(']) > len(number_bracket[')']) and numbers[-1] == signs[-1]:
+            return
+        elif len(number_bracket['(']) > len(number_bracket[')']) and numbers[-1] > signs[-1]:
+            number_bracket[')'].append(len(numbers) - 1)
+            change_last_char('()')
+
+    
+    if not numbers:
+        return
+    
+    check_signs = [
+        '+',
+        '-',
+        '*',
+        '/'
+    ]
+    processing_signs(
+        check_signs,
+        callback
+    )
+
+    last_number = numbers[-1]
+    if callback.data == 'change sign':
+        numbers[-1] = '-' + last_number
+        change_last_char('+/-')
+    elif callback.data == 'conversion to percentage' and not numbers:
+        last_number = float(last_number) // 100
+        add_int_or_float_number(last_number)
+        change_last_char('%')
+    elif callback.data == '.':
+        numbers[-1] = last_number + '.'
+        change_last_char('.')
+
+
+def processing_all_deletes(callback, numbers, number_bracket, signs):
+    last_character = expression['last_char'][-1]
+    if callback.data == 'delete':
+        if '0' <= last_character <= '9' or last_character == '.':
+            numbers[-1] = numbers[-1][:-1]
+        elif last_character == '+/-':
+            numbers[-1] = numbers[-1][1:]
+        elif last_character == '%':
+            last_number *= 100
+            add_int_or_float_number(last_number)
+        elif last_character in signs :
+            exp_signs = expression['signs']
+            exp_signs.pop(len(exp_signs))
+        elif last_character == '()':
+            number_bracket.pop(len(number_bracket))
+        delete_last_char()
 
 
 def calculate_expression():
+    brackets = expression['number_bracket']
+    if brackets:
+        for i in range(brackets['('][-1], brackets[')'][-1] + 1):
 
+        return calculate_expression()
 
 
 def show_expression(callback):
@@ -89,82 +172,15 @@ def show_expression(callback):
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_calculator(callback):
-    digs = [
-        '0',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-    ]
-    processing_nums_or_signs(
-        digs,
-        "numbers",
-        callback
-    )
-    change_last_char(expression['numbers'])
-    
-    signs = [
-        '+',
-        '-',
-        '*',
-        '/'
-    ]
-    processing_nums_or_signs(
-        signs,
-        "signs",
-        callback
-    )
-
     numbers = expression["numbers"]
-    if not numbers and callback.data == '()':
-        number_bracket = expression['number_bracket']
-        if len(number_bracket) % 2 == 0:
-            number_bracket[1] = '('
-        change_last_char('()')
-    else:
-        return
-
-        
-
-    last_number = numbers[len(numbers)]
     number_bracket = expression['number_bracket']
-    if callback.data == 'change sign':
-        numbers[len(numbers)] = '-' + last_number
-        change_last_char('+/-')
-    elif callback.data == 'conversion to percentage' and not numbers:
-        last_number = float(last_number) // 100
-        add_int_or_float_number(last_number)
-        change_last_char('%')
-    elif callback.data == '()':
-        if len(number_bracket) % 2 == 0:
-            number_bracket[len(numbers)] = '('
-        else:
-            number_bracket[len(numbers)] = ')'
-        change_last_char('()')
-    elif callback.data == '.':
-        numbers[len(numbers)] = last_number + '.'
-        change_last_char('.')
+    signs = expression['signs']
 
-    last_character = expression['last_char']
-    if callback.data == 'delete':
-        if '0' <= last_character <= '9' or last_character == '.':
-            numbers[len(numbers)] = numbers[len(numbers)][:-1]
-        elif last_character == '+/-':
-            numbers[len(numbers)] = numbers[len(numbers)][1:]
-        elif last_character == '%':
-            last_number *= 100
-            add_int_or_float_number(last_number)
-        elif last_character in signs :
-            exp_signs = expression['signs']
-            exp_signs.pop(len(exp_signs))
-        elif last_character == '()':
-            number_bracket.pop(len(number_bracket))
+    processing_all_in_expression(callback, numbers, number_bracket, signs)
+
+    processing_all_deletes(callback, numbers, number_bracket, signs)
     
     if callback.data == '=':
         if len(number_bracket) % 2 == 1:
             number_bracket.pop(len(number_bracket))
+        nums = []
