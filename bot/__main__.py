@@ -2,9 +2,8 @@ import random
 import os
 
 import telebot
-from dotenv import dotenv_values
 
-bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
+from bot.applications.calculator import bot
 
 
 # displays a greeting
@@ -177,7 +176,7 @@ def responds_to_file(message):
         bot.reply_to(message, "Данный файл не содержит команд")
     file.truncate(0)
     file.close()
-    
+
 
 # show photo
 def give_photo(message):

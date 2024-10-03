@@ -1,16 +1,9 @@
-from bot.__main__ import bot
-
 import telebot
+from dotenv import dotenv_values
 
-expression = {
-    'numbers': [],
-    'signs': {},
-    'number_bracket': {'(': [], ')': []},
-    'string_expression': [],
-}
+bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
 
-
-@bot.message_handler(commands=['calculator'])
+@bot.message_handler(commands=["calculator"])
 def show_calculator(message):
     markup = telebot.types.InlineKeyboardMarkup()
     dig_btn0 = telebot.types.InlineKeyboardButton("0", callback_data="0")
@@ -43,144 +36,93 @@ def show_calculator(message):
     bot.send_message(message.chat.id, 'Введите выражение с помощью кнопок', reply_markup=markup)
 
 
-def change_last_char(char):
-    expression['last_char'].append(char)
-
-
-def delete_last_char():
-    if not expression['last_char']:
-        return
-    expression['last_char'].pop(-1)
-
-
-def add_int_or_float_number(num):
-    numbers = expression['numbers']
-    if int(num) == num:
-        numbers.append(int(num))
+def change_to_int_or_float(number):
+    if int(number) == number:
+        return str(int(number))
     else:
-        numbers.append(num)
+        return str(number)
 
 
 def processing_nums(callback):
-    for dig in range(0, 10):
-        numbers_count = len(expression["numbers"])
-        signs_count = len(expression["signs"])
-        if callback.data == dig and numbers_count == signs_count:
-            expression['numbers'].append(dig)
-            change_last_char(dig)
-            return
-        elif callback.data == dig and numbers_count > signs_count:
-            expression['numbers'][numbers_count - 1] += dig
-            change_last_char(dig)
-            return
+    for dig in range(10):
+        if callback.data == dig:
+            return str(dig)
+    return ''
+
 
 
 def processing_signs(signs, callback):
     for sign in signs:
-        numbers_count = len(expression["numbers"])
-        signs_count = len(expression["signs"])
-        if callback.data == sign and numbers_count == signs_count:
-            return
-        elif callback.data == sign and numbers_count > signs_count:
-            expression['signs'].append(sign)
-            change_last_char(sign)
-            return
+        if callback.data == sign:
+            return sign
+
+    return ''
 
 
-def processing_all_in_expression(callback, numbers, number_bracket, signs):
-    processing_nums(
-        callback
-    )
+def processing_all_in_expression(callback, expression):
+    dig_to_add = processing_nums(callback)
+    expression += dig_to_add
+    
 
     if callback.data == '()':
-        if not len(numbers):
-            number_bracket['('].append(len(numbers))
-            change_last_char('()')
-        elif len(number_bracket['(']) == len(number_bracket[')']):
-            number_bracket['('].append(len(numbers) - 1)
-            change_last_char('()')
-        elif len(number_bracket['(']) > len(number_bracket[')']) and numbers[-1] == signs[-1]:
-            return
-        elif len(number_bracket['(']) > len(number_bracket[')']) and numbers[-1] > signs[-1]:
-            number_bracket[')'].append(len(numbers) - 1)
-            change_last_char('()')
+        if expression[-1] == ' ':
+            return ''
+        open_bracket_count = expression.count('(')
+        close_bracket_count = expression.count(')')
+        if open_bracket_count == close_bracket_count:
+            expression += '('
+        else:
+            expression += ')'
 
     
-    if not numbers:
-        return
+    if not expression:
+        return ''
     
-    check_signs = [
+    signs = [
         '+',
         '-',
         '*',
         '/'
     ]
-    processing_signs(
-        check_signs,
+    sign_to_add = processing_signs(
+        signs,
         callback
     )
+    expression += sign_to_add
 
-    last_number = numbers[-1]
+    if expression[-1] == ' ':
+            return ''
+
+    first_left_sign = expression.rfind(' ') + 1
     if callback.data == 'change sign':
-        numbers[-1] = '-' + last_number
-        change_last_char('+/-')
-    elif callback.data == 'conversion to percentage' and not numbers:
-        last_number = float(last_number) // 100
-        add_int_or_float_number(last_number)
-        change_last_char('%')
+        expression = expression[:first_left_sign] + '-' + expression[first_left_sign:]
+    elif callback.data == 'conversion to percentage':
+        last_number = float(expression[first_left_sign:])
+        last_number /= 100
+        last_number = change_to_int_or_float(last_number)
+        expression = expression[:first_left_sign] + last_number
     elif callback.data == '.':
-        numbers[-1] = last_number + '.'
-        change_last_char('.')
-
-
-def processing_all_deletes(callback, numbers, number_bracket, signs):
-    last_character = expression['last_char'][-1]
-    if callback.data == 'delete':
-        if '0' <= last_character <= '9' or last_character == '.':
-            numbers[-1] = numbers[-1][:-1]
-        elif last_character == '+/-':
-            numbers[-1] = numbers[-1][1:]
-        elif last_character == '%':
-            last_number *= 100
-            add_int_or_float_number(last_number)
-        elif last_character in signs :
-            exp_signs = expression['signs']
-            exp_signs.pop(len(exp_signs))
-        elif last_character == '()':
-            number_bracket.pop(len(number_bracket))
-        delete_last_char()
-
-
-def calculate_expression():
-    brackets = expression['number_bracket']
-    if brackets:
-        for i in range(brackets['('][-1], brackets[')'][-1] + 1):
-
-        return calculate_expression()
-
-
-def show_expression(callback):
-    str_exp = ''
-    for i in range(len(expression['signs'])):
-        str_exp += expression.get(i)
-
-    bot.edit_message_text(
-        callback.message.chat.id,
-        callback.message.message_id
-    )
-
+        expression += '.'
+    return expression
+    
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_calculator(callback):
-    numbers = expression["numbers"]
-    number_bracket = expression['number_bracket']
-    signs = expression['signs']
+    expression = ''
 
-    processing_all_in_expression(callback, numbers, number_bracket, signs)
+    new_expression = processing_all_in_expression(callback, expression)
+    expression += new_expression
 
-    processing_all_deletes(callback, numbers, number_bracket, signs)
+    # processing_all_deletes
+    if callback.data == 'del':
+        expression = expression[:-1]
     
-    if callback.data == '=':
-        if len(number_bracket) % 2 == 1:
-            number_bracket.pop(len(number_bracket))
-        nums = []
+
+    if callback.data == '=' and not expression:
+        solution_of_expression = eval(expression)
+        expression += ' = ' + solution_of_expression
+    
+    bot.send_message(
+        callback.message.chat.id,
+        expression
+    )
