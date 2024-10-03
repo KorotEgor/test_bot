@@ -4,7 +4,7 @@ from dotenv import dotenv_values
 bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
 
 @bot.message_handler(commands=["calculator"])
-def show_calculator(message):
+def show_calculator(message, expression=None):
     markup = telebot.types.InlineKeyboardMarkup()
     dig_btn0 = telebot.types.InlineKeyboardButton("0", callback_data="0")
     dig_btn1 = telebot.types.InlineKeyboardButton("1", callback_data="1")
@@ -33,7 +33,10 @@ def show_calculator(message):
     markup.row(dig_btn1, dig_btn2, dig_btn3, add_btn)
     markup.row(dig_btn0, com_btn, bracket_btn, eql_btn)
 
-    bot.send_message(message.chat.id, 'Введите выражение с помощью кнопок', reply_markup=markup)
+    if expression is None:
+        bot.send_message(message.chat.id, 'Введите выражение с помощью кнопок', reply_markup=markup)
+    else:
+        bot.send_message(message.chat.id, expression, reply_markup=markup)
 
 
 def change_to_int_or_float(number):
@@ -45,7 +48,7 @@ def change_to_int_or_float(number):
 
 def processing_nums(callback):
     for dig in range(10):
-        if callback.data == dig:
+        if callback.data == str(dig):
             return str(dig)
     return ''
 
@@ -65,7 +68,7 @@ def processing_all_in_expression(callback, expression):
     
 
     if callback.data == '()':
-        if expression[-1] == ' ':
+        if not expression or expression[-1] == ' ':
             return ''
         open_bracket_count = expression.count('(')
         close_bracket_count = expression.count(')')
@@ -86,6 +89,7 @@ def processing_all_in_expression(callback, expression):
     ]
     sign_to_add = processing_signs(
         signs,
+
         callback
     )
     expression += sign_to_add
@@ -122,7 +126,11 @@ def callback_calculator(callback):
         solution_of_expression = eval(expression)
         expression += ' = ' + solution_of_expression
     
-    bot.send_message(
+    bot.delete_message(
         callback.message.chat.id,
-        expression
+        callback.message.message_id
     )
+    if not expression:
+        show_calculator(callback.message)
+        return
+    show_calculator(callback.message, expression)
