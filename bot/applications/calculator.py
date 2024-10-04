@@ -3,8 +3,10 @@ from dotenv import dotenv_values
 
 bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
 
+expression = ''
+
 @bot.message_handler(commands=["calculator"])
-def show_calculator(message, expression=None):
+def show_calculator(message, expr=None, after_equal=False):
     markup = telebot.types.InlineKeyboardMarkup()
     dig_btn0 = telebot.types.InlineKeyboardButton("0", callback_data="0")
     dig_btn1 = telebot.types.InlineKeyboardButton("1", callback_data="1")
@@ -20,7 +22,7 @@ def show_calculator(message, expression=None):
     sign_change_btn = telebot.types.InlineKeyboardButton("+/-", callback_data="change sign")
     conv_to_perc_btn = telebot.types.InlineKeyboardButton("%", callback_data="conversion to percentage")
     div_btn = telebot.types.InlineKeyboardButton("÷", callback_data="/")
-    mult_btn = telebot.types.InlineKeyboardButton("·", callback_data="*")
+    mult_btn = telebot.types.InlineKeyboardButton("*", callback_data="*")
     sub_btn = telebot.types.InlineKeyboardButton("-", callback_data="-")
     add_btn = telebot.types.InlineKeyboardButton("+", callback_data="+")
     eql_btn = telebot.types.InlineKeyboardButton("=", callback_data="=")
@@ -33,11 +35,12 @@ def show_calculator(message, expression=None):
     markup.row(dig_btn1, dig_btn2, dig_btn3, add_btn)
     markup.row(dig_btn0, com_btn, bracket_btn, eql_btn)
 
-    if expression is None:
+
+    if expr is None:
         bot.send_message(message.chat.id, 'Введите выражение с помощью кнопок', reply_markup=markup)
     else:
-        bot.send_message(message.chat.id, expression, reply_markup=markup)
-
+        bot.send_message(message.chat.id, expr, reply_markup=markup)
+        
 
 def change_to_int_or_float(number):
     if int(number) == number:
@@ -108,24 +111,24 @@ def processing_all_in_expression(callback, expression):
     elif callback.data == '.':
         expression += '.'
     return expression
-    
+
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_calculator(callback):
-    expression = ''
-
-    new_expression = processing_all_in_expression(callback, expression)
-    expression += new_expression
+    global expression
+    expression = processing_all_in_expression(callback, expression)
 
     # processing_all_deletes
-    if callback.data == 'del':
+    if callback.data == 'delete':
         expression = expression[:-1]
-    
 
-    if callback.data == '=' and not expression:
+    if callback.data == '=':
         solution_of_expression = eval(expression)
-        expression += ' = ' + solution_of_expression
-    
+        expression = expression + ' = ' + str(solution_of_expression)
+        show_calculator(callback.message, expression, after_equal=True)
+        expression = ''
+        return
+
     bot.delete_message(
         callback.message.chat.id,
         callback.message.message_id

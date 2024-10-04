@@ -3,3 +3,4 @@ help - вывод всех команд их функции
 github - открыть мой github
 about_me - информация обо мне
 photo - мое фото
+calculator - калькулятор
