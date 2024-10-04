@@ -4,10 +4,13 @@ from dotenv import dotenv_values
 bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
 
 expression = ''
+mrk = []
 
 @bot.message_handler(commands=["calculator"])
 def show_calculator(message, expr=None, after_equal=False):
     markup = telebot.types.InlineKeyboardMarkup()
+    global mrk
+    mrk = markup
     dig_btn0 = telebot.types.InlineKeyboardButton("0", callback_data="0")
     dig_btn1 = telebot.types.InlineKeyboardButton("1", callback_data="1")
     dig_btn2 = telebot.types.InlineKeyboardButton("2", callback_data="2")
@@ -40,7 +43,7 @@ def show_calculator(message, expr=None, after_equal=False):
         bot.send_message(message.chat.id, 'Введите выражение с помощью кнопок', reply_markup=markup)
     else:
         bot.send_message(message.chat.id, expr, reply_markup=markup)
-        
+
 
 def change_to_int_or_float(number):
     if int(number) == number:
@@ -54,7 +57,6 @@ def processing_nums(callback):
         if callback.data == str(dig):
             return str(dig)
     return ''
-
 
 
 def processing_signs(signs, callback):
@@ -129,11 +131,9 @@ def callback_calculator(callback):
         expression = ''
         return
 
-    bot.delete_message(
+    bot.edit_message_text(
+        expression,
         callback.message.chat.id,
-        callback.message.message_id
+        callback.message.message_id,
+        reply_markup=mrk
     )
-    if not expression:
-        show_calculator(callback.message)
-        return
-    show_calculator(callback.message, expression)
