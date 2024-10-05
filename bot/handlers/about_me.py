@@ -1,10 +1,6 @@
 import telebot
 
-
-from bot.applications.calculator import bot
-
-# tell about me
-def autobiography(message):
+def handler(message, bot):
     markup = telebot.types.InlineKeyboardMarkup()
     btn1 = telebot.types.InlineKeyboardButton("программирование", callback_data="програмирование")
     btn2 = telebot.types.InlineKeyboardButton("музыка", callback_data="музыка")
@@ -19,12 +15,7 @@ def autobiography(message):
     )
 
 
-@bot.message_handler(commands=["about_me"])
-def show_autobiography(message):
-    autobiography(message)
-
-
-def tell_about_programming(callback):
+def tell_about_programming(callback, bot):
     markup = telebot.types.InlineKeyboardMarkup()
     programming = "Сейчас я умею писать только на python. Этого бота написал используя библиотеку pyTelegramBotAPI. Только недавно решил подойти к программированию с полной серьезностью (поэтому вы это и видете). Вот ссылка на мой github"
     markup.add(telebot.types.InlineKeyboardButton("мой GitHub", url="https://github.com/KorotEgor"))
@@ -36,7 +27,7 @@ def tell_about_programming(callback):
     )
 
 
-def tell_about_music(callback):
+def tell_about_music(callback, bot):
     markup = telebot.types.InlineKeyboardMarkup()
     music = "В основном слущаю пост-панк и панк-рок. У меня нет единственного либимого исполнителя или единственной любимой песни. Исполнители, которых я могу посоветовать: Сова, Черный Лукич, Янка Дигелева, Перемотка, Свидетельство о смерти и много кого еще. Если интересно вот ссылка на мой плейлист на яндекс музыке"
     markup.add(
@@ -53,12 +44,11 @@ def tell_about_music(callback):
     )
 
 
-@bot.callback_query_handler(func=lambda callback: True)
-def callback_about_me(callback):
+def callback(callback, bot):
     if callback.data == "програмирование":
-        tell_about_programming(callback)
+        tell_about_programming(callback, bot)
     elif callback.data == "музыка":
-        tell_about_music(callback)
+        tell_about_music(callback, bot)
     elif callback.data == "музыка и программирование":
-        tell_about_programming(callback)
-        tell_about_music(callback)
+        tell_about_programming(callback, bot)
+        tell_about_music(callback, bot)
