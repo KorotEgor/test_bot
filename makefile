@@ -3,3 +3,6 @@ install:
 
 run:
 	uv run bot
+
+lint:
+	uv run ruff format && uv run ruff check
