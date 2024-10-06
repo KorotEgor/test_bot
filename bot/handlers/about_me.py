@@ -2,11 +2,11 @@ import telebot
 
 def handler(message, bot):
     markup = telebot.types.InlineKeyboardMarkup()
-    btn1 = telebot.types.InlineKeyboardButton("программирование", callback_data="програмирование")
-    btn2 = telebot.types.InlineKeyboardButton("музыка", callback_data="музыка")
+    btn1 = telebot.types.InlineKeyboardButton("программирование", callback_data="me/програмирование")
+    btn2 = telebot.types.InlineKeyboardButton("музыка", callback_data="me/музыка")
     markup.row(btn1, btn2)
     markup.add(
-        telebot.types.InlineKeyboardButton("музыка и программирование", callback_data="музыка и программирование")
+        telebot.types.InlineKeyboardButton("музыка и программирование", callback_data="me/музыка и программирование")
     )
     bot.send_message(
         message.chat.id,
@@ -45,10 +45,11 @@ def tell_about_music(callback, bot):
 
 
 def callback(callback, bot):
-    if callback.data == "програмирование":
-        tell_about_programming(callback, bot)
-    elif callback.data == "музыка":
-        tell_about_music(callback, bot)
-    elif callback.data == "музыка и программирование":
-        tell_about_programming(callback, bot)
-        tell_about_music(callback, bot)
+    match callback.data:
+        case "me/програмирование":
+            tell_about_programming(callback, bot)
+        case "me/музыка":
+            tell_about_music(callback, bot)
+        case "me/музыка и программирование":
+            tell_about_programming(callback, bot)
+            tell_about_music(callback, bot)

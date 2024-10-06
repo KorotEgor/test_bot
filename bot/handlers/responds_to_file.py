@@ -1,39 +1,28 @@
-import os
-
 def handler(message, bot):
     file_info = bot.get_file(message.document.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-
-    with open("./user_file.txt", "wb") as new_file:
-        new_file.write(downloaded_file)
-
-    if os.path.getsize("./user_file.txt") > 10**6:
+    if file_info.file_size > 10**3:
         bot.reply_to(message, "Файл слишком большой")
         return
 
-    file = open("./user_file.txt", "r+")
+    data = bot.download_file(file_info.file_path)
 
-    user_commands = []
-    string = file.readline().strip()
-    while string:
-        user_commands += string.split()
-        string = file.readline().strip()
+    correct_commands = {
+        "start",
+        "hello",
+        "help",
+        "about_me",
+        "photo",
+        "github",
+        "git",
+    }
 
-    correct_commands = [
-        "/start",
-        "/hello",
-        "/help",
-        "/about_me",
-        "/photo",
-        "/github",
-        "/git",
-    ]
-    correct_user_commands = []
-    for command in user_commands:
-        for correct_command in correct_commands:
-            usr_comm = command.strip().lower()
-            if usr_comm == correct_command.strip() and usr_comm not in correct_user_commands:
-                correct_user_commands.append(correct_command)
+    correct_user_commands = set()
+    lines = [string.strip() for string in data.decode().split("\n")]
+    for line in lines:
+        for cmd in line.split():
+            cmd = cmd.strip().removeprefix("/").lower()
+            if cmd in correct_commands:
+                correct_user_commands.add("/" + cmd)
 
     correct_user_commands = "\n".join(correct_user_commands)
     if correct_user_commands:
@@ -44,5 +33,3 @@ def handler(message, bot):
         )
     else:
         bot.reply_to(message, "Данный файл не содержит команд")
-    file.truncate(0)
-    file.close()

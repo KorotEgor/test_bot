@@ -16,7 +16,8 @@ def main():
     bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
 
     bot.register_message_handler(about_me.handler, commands=["about_me"], pass_bot=True)
-    bot.register_callback_query_handler(about_me.callback, func=lambda _: True, pass_bot=True)
+    bot.register_callback_query_handler(about_me.callback, func=lambda cb: cb.data.startswith("me/"), pass_bot=True)
+
     bot.register_message_handler(say_hello.handler, commands=["start", "hello"], pass_bot=True)
     bot.register_message_handler(show_all_commands.handler, commands=["help"], pass_bot=True)
     bot.register_message_handler(
