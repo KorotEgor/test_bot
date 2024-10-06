@@ -8,12 +8,17 @@ from bot.handlers import (
     show_all_commands,
     say_hello,
     about_me,
+    calculator,
 )
 import telebot
 
 
 def main():
     bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
+
+    calc = calculator.Calculator()
+    bot.register_message_handler(calc.handler, commands=["calculator"], pass_bot=True)
+    bot.register_callback_query_handler(calc.callback, func=lambda cb: cb.data.startswith("cal/"), pass_bot=True)
 
     bot.register_message_handler(about_me.handler, commands=["about_me"], pass_bot=True)
     bot.register_callback_query_handler(about_me.callback, func=lambda cb: cb.data.startswith("me/"), pass_bot=True)
