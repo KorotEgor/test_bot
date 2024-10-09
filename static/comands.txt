@@ -4,3 +4,4 @@ github - открыть мой github
 about_me - информация обо мне
 photo - мое фото
 calculator - калькулятор
+rock_scissors_paper -  игра "камень, ножницы, бумага"
