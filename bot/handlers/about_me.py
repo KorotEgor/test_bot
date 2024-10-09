@@ -1,5 +1,6 @@
 import telebot
 
+
 def handler(message, bot):
     markup = telebot.types.InlineKeyboardMarkup()
     btn1 = telebot.types.InlineKeyboardButton("программирование", callback_data="me/програмирование")

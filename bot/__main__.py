@@ -9,12 +9,21 @@ from bot.handlers import (
     say_hello,
     about_me,
     calculator,
+    rock_scissors_paper,
 )
 import telebot
 
 
 def main():
     bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
+
+    bot.register_message_handler(rock_scissors_paper.handler, commands=["rock_scissors_paper"], pass_bot=True)
+    bot.register_callback_query_handler(
+        rock_scissors_paper.game_callback, func=lambda cb: cb.data.startswith("rspgame/"), pass_bot=True
+    )
+    bot.register_callback_query_handler(
+        rock_scissors_paper.after_game_callback, func=lambda cb: cb.data.startswith("rsprpl/"), pass_bot=True
+    )
 
     calc = calculator.Calculator()
     bot.register_message_handler(calc.handler, commands=["calculator"], pass_bot=True)
