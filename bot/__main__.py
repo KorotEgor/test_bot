@@ -10,6 +10,7 @@ from bot.handlers import (
     about_me,
     calculator,
     rock_scissors_paper,
+    quiz,
 )
 import telebot
 
@@ -17,12 +18,19 @@ import telebot
 def main():
     bot = telebot.TeleBot(dotenv_values(".env")["TOKEN"])
 
+    qz = quiz.Quiz()
+    bot.register_message_handler(qz.handler, commands=["quiz"], pass_bot=True)
+    bot.register_callback_query_handler(qz.game_callback, func=lambda cb: cb.data.startswith("qz/"), pass_bot=True)
+    bot.register_callback_query_handler(
+        qz.reply_game_callback, func=lambda cb: cb.data.startswith("qzrpl/"), pass_bot=True
+    )
+
     bot.register_message_handler(rock_scissors_paper.handler, commands=["rock_scissors_paper"], pass_bot=True)
     bot.register_callback_query_handler(
-        rock_scissors_paper.game_callback, func=lambda cb: cb.data.startswith("rspgame/"), pass_bot=True
+        rock_scissors_paper.game_callback, func=lambda cb: cb.data.startswith("rsp/"), pass_bot=True
     )
     bot.register_callback_query_handler(
-        rock_scissors_paper.after_game_callback, func=lambda cb: cb.data.startswith("rsprpl/"), pass_bot=True
+        rock_scissors_paper.reply_game_callback, func=lambda cb: cb.data.startswith("rsprpl/"), pass_bot=True
     )
 
     calc = calculator.Calculator()

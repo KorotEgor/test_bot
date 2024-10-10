@@ -12,6 +12,8 @@ def handler(message, bot):
 
 <u>/calculator</u>                         показать калькулятор
 
-<u>/rock_scissors_paper</u>     игра "камень, ножницы, бумага"''',
+<u>/rock_scissors_paper</u>     игра "камень, ножницы, бумага"
+
+<u>/quiz</u>                         показать квиз''',
         parse_mode="html",
     )
