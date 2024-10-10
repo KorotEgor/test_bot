@@ -1,7 +1,7 @@
 def handler(message, bot):
     bot.send_message(
         message.chat.id,
-        '''<b>команды:</b>              <b>функции:</b>
+        '''<b>команды:</b>                        <b>функции:</b>
 <u>/start</u>   <u>/hello</u>                    начать диалог
 
 <u>/photo</u>                                показать мое фото
@@ -14,6 +14,6 @@ def handler(message, bot):
 
 <u>/rock_scissors_paper</u>     игра "камень, ножницы, бумага"
 
-<u>/quiz</u>                         показать квиз''',
+<u>/quiz</u>                                    показать квиз''',
         parse_mode="html",
     )

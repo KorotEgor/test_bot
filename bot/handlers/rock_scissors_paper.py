@@ -23,9 +23,9 @@ def who_wins(user_opt, prog_opt):
         "rsp/ножницы": "rsp/бумага",
         "rsp/бумага": "rsp/камень",
     }
-    user_opt_for_resp = user_opt.split("/")[1]
+    user_opt_for_resp = change_paper_form(user_opt.split("/")[1])
     prog_opt_for_resp = change_paper_form(prog_opt.split("/")[1])
-    responce = f'Вы выбрали "{user_opt_for_resp}, а я {prog_opt_for_resp}. '
+    responce = f'Вы выбрали {user_opt_for_resp}, а я {prog_opt_for_resp}. '
     if user_opt == prog_opt:
         return responce + "Ничья!"
     elif beatings[user_opt] == prog_opt:
