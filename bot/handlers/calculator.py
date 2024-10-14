@@ -108,18 +108,16 @@ class Calculator:
 
     def add_to_expression(self, user_id, data):
         state = self._users[user_id]
-        is_zero = data == '0'
-        if not state.expression:
-            if is_zero:
-                return False
+        exp = state.expression
+        if not exp:
             state.expression.append(data)
             return True
         operations = state.all_operations
         if is_num_or_pnt(operations[-2]) and is_num_or_pnt(operations[-1]):
+            if exp[-1] == '0':
+                return False
             state.expression[-1] += data
         else:
-            if is_zero:
-                return False
             state.expression.append(data)
         return True
 
