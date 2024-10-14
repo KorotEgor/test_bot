@@ -1,19 +1,20 @@
-import telebot
 from dataclasses import dataclass
+import telebot
 
-# dependencies = {
-#     'digs': ['signs', '.', '%', '+/-', 'DEL'],
-#     'signs': ['digs', 'DEL'],
-#     '.': ['digs', 'DEL'],
-#     '%': ['digs', 'signs','DEL']
 
-# }
+PERMITTED_OPERATIONS = {
+    "digs": ["digs", "signs", ".", "change sign"],
+    "signs": ["digs"],
+    ".": ["digs", "change sign"],
+    "change sign": ["change sign", "digs", ".", "signs"],
+}
 
 
 @dataclass
 class State:
-    expression: str
-    mrk: telebot.types.InlineKeyboardMarkup
+    expression: list
+    all_operations: list
+    markup: telebot.types.InlineKeyboardMarkup
 
 
 class Calculator:
@@ -21,106 +22,118 @@ class Calculator:
         self._users = {}
 
     def handler(self, message, bot):
-        mrk = telebot.util.quick_markup(
+        markup = telebot.util.quick_markup(
             {
-                "DEL": {"callback_data": "cal/delete"},
-                "+/-": {"callback_data": "cal/change sign"},
-                "%": {"callback_data": "cal/conversion to percentage"},
                 "÷": {"callback_data": "cal//"},
+                "-": {"callback_data": "cal/-"},
+                "+": {"callback_data": "cal/+"},
+                "*": {"callback_data": "cal/*"},
                 "7": {"callback_data": "cal/7"},
                 "8": {"callback_data": "cal/8"},
                 "9": {"callback_data": "cal/9"},
-                "*": {"callback_data": "cal/*"},
+                "+/-": {"callback_data": "cal/change sign"},
                 "4": {"callback_data": "cal/4"},
                 "5": {"callback_data": "cal/5"},
                 "6": {"callback_data": "cal/6"},
-                "-": {"callback_data": "cal/-"},
+                "=": {"callback_data": "cal/="},
                 "1": {"callback_data": "cal/1"},
                 "2": {"callback_data": "cal/2"},
                 "3": {"callback_data": "cal/3"},
-                "+": {"callback_data": "cal/+"},
-                "0": {"callback_data": "cal/0"},
                 ".": {"callback_data": "cal/."},
-                "=": {"callback_data": "cal/="},
+                "0": {"callback_data": "cal/0"},
             },
             row_width=4,
         )
 
-        state = self._users.setdefault(message.from_user.id, State(expression="", mrk=mrk))
-
-        if not state.expression:
-            bot.send_message(message.chat.id, "Введите выражение с помощью кнопок", reply_markup=state.mrk)
+        state = self._users.setdefault(message.from_user.id, State(expression=[], all_operations=[], markup=markup))
+        if state.expression:
+            bot.send_message(message.chat.id, state.expression, reply_markup=markup)
         else:
-            bot.send_message(message.chat.id, state.expression, reply_markup=state.mrk)
-
-    def processing_all_in_expression(self, cmd, expression):
-        dig_to_add = processing_nums(cmd)
-        expression += dig_to_add
-
-        if not expression:
-            return ""
-
-        signs = ["+", "-", "*", "/"]
-        sign_to_add = processing_signs(signs, cmd)
-        expression += sign_to_add
-
-        if expression[-1] == " ":
-            return ""
-
-        first_left_sign = expression.rfind(" ") + 1
-        if cmd == "change sign":
-            expression = expression[:first_left_sign] + "-" + expression[first_left_sign:]
-        elif cmd == "conversion to percentage":
-            last_number = float(expression[first_left_sign:])
-            last_number /= 100
-            last_number = change_to_int_or_float(last_number)
-            expression = expression[:first_left_sign] + last_number
-        elif cmd == ".":
-            expression += "."
-
-        return expression
+            bot.send_message(message.chat.id, "Введите выражение с помощью кнопок", reply_markup=state.markup)
 
     def callback(self, callback, bot):
-        state = self._users[callback.from_user.id]
+        chat_id = callback.message.chat.id
+        message_id = callback.message.message_id
+        user_id = callback.from_user.id
+        state = self._users[user_id]
 
-        cmd = callback.data.removeprefix("cal/")
-        state.expression = self.processing_all_in_expression(cmd, state.expression)
+        data = callback.data.removeprefix("cal/")
+        data_to_compare = change_to_compare(data)
+        exp = state.expression
 
-        # processing_all_deletes
-        if cmd == "delete":
-            state.expression = state.expression[:-1]
+        some_changes = False
+        if exp:
+            last_operation = state.all_operations[-1]
+            is_permitted_operation = data_to_compare in PERMITTED_OPERATIONS[last_operation]
+        else:
+            last_operation = None
+            is_permitted_operation = False
 
-        if cmd == "=":
-            solution_of_expression = eval(state.expression)
-            state.expression = state.expression + " = " + str(solution_of_expression)
-            bot.edit_message_text(
-                state.expression, callback.message.chat.id, callback.message.message_id, reply_markup=state.mrk
-            )
-            state.expression = ""
-            return
+        match data:
+            case "change sign":
+                if is_permitted_operation:
+                    state.all_operations.append(data_to_compare)
+                    self.change_sign(user_id)
+                    some_changes = True
+            case "=":
+                self.processing_equals(user_id, bot, chat_id, message_id, last_operation)
+                return
+            case _:
+                if is_permitted_operation or (not exp and data_to_compare == "digs"):
+                    state.all_operations.append(data_to_compare)
+                    some_changes = self.add_to_expression(user_id, data)
+                    if not some_changes:
+                        state.all_operations = state.all_operations[:-1]
+        if some_changes:
+            bot.edit_message_text(' '.join(exp), chat_id, message_id, reply_markup=state.markup)
 
-        bot.edit_message_text(
-            state.expression, callback.message.chat.id, callback.message.message_id, reply_markup=state.mrk
-        )
+    def change_sign(self, user_id):
+        state = self._users[user_id]
+        last_added = state.expression[-1]
+        if last_added[0] == "-":
+            state.expression[-1] = last_added[1:]
+        else:
+            state.expression[-1] = "-" + last_added
+
+    def processing_equals(self, user_id, bot, chat_id, message_id, last_operation):
+        state = self._users[user_id]
+        exp = state.expression
+        if (last_operation == "digs" or last_operation == "change sign") and "signs" in state.all_operations:
+            str_exp = " ".join(exp)
+            solution_of_expression = eval(str_exp)
+            state.expression = str_exp + " = " + str(solution_of_expression)
+            bot.edit_message_text(state.expression, chat_id, message_id, reply_markup=state.markup)
+            state.expression = []
+            state.all_operations = []
+
+    def add_to_expression(self, user_id, data):
+        state = self._users[user_id]
+        is_zero = data == '0'
+        if not state.expression:
+            if is_zero:
+                return False
+            state.expression.append(data)
+            return True
+        operations = state.all_operations
+        if is_num_or_pnt(operations[-2]) and is_num_or_pnt(operations[-1]):
+            state.expression[-1] += data
+        else:
+            if is_zero:
+                return False
+            state.expression.append(data)
+        return True
 
 
-def change_to_int_or_float(number):
-    if int(number) == number:
-        return str(int(number))
+def is_num_or_pnt(operation):
+    if operation == 'digs' or operation == '.':
+        return True
+    return False
+
+
+def change_to_compare(data):
+    if "0" <= data <= "9":
+        return "digs"
+    elif data in ["+", "-", "/", "*"]:
+        return "signs"
     else:
-        return str(number)
-
-
-def processing_nums(cmd):
-    for dig in range(10):
-        if cmd == str(dig):
-            return str(dig)
-    return ""
-
-
-def processing_signs(signs, cmd):
-    for sign in signs:
-        if cmd == sign:
-            return sign
-
-    return ""
+        return data

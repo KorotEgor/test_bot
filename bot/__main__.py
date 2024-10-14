@@ -1,5 +1,6 @@
 from dotenv import dotenv_values
 from bot.handlers import (
+    calculator,
     text_commands,
     open_github,
     give_photo,
@@ -8,7 +9,6 @@ from bot.handlers import (
     show_all_commands,
     say_hello,
     about_me,
-    calculator,
     rock_scissors_paper,
     quiz,
 )
