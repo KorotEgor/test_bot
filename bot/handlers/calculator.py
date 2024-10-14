@@ -114,7 +114,8 @@ class Calculator:
             return True
         operations = state.all_operations
         if is_num_or_pnt(operations[-2]) and is_num_or_pnt(operations[-1]):
-            if exp[-1] == '0':
+            last_act = exp[-1]
+            if last_act == '0' or (operations[-1] == '.' and '.' in last_act):
                 return False
             state.expression[-1] += data
         else:
