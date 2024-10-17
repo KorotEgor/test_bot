@@ -113,7 +113,7 @@ class Calculator:
             state.expression.append(data)
             return True
         operations = state.all_operations
-        if is_num_or_pnt(operations[-2]) and is_num_or_pnt(operations[-1]):
+        if is_num_or_pnt(operations[-2]) and is_num_or_pnt(operations[-1]) or operations[-2] == 'change sign':
             last_act = exp[-1]
             if last_act == '0' or (operations[-1] == '.' and '.' in last_act):
                 return False

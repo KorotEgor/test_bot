@@ -8,6 +8,7 @@ source = { editable = "." }
 dependencies = [
     { name = "pytelegrambotapi" },
     { name = "python-dotenv" },
+    { name = "ruff" },
 ]
 
 [package.dev-dependencies]
@@ -19,6 +20,7 @@ dev = [
 requires-dist = [
     { name = "pytelegrambotapi", specifier = ">=4.23.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
+    { name = "ruff", specifier = ">=0.6.9" },
 ]
 
 [package.metadata.requires-dev]
